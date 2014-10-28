@@ -69,7 +69,7 @@ function notify_current_track()
 			--..string.shellescape(album).."'</i>'"
 	end
 
-	command = "notify-send -a mpv "..header.." "..body
+	command = "notify-send -a mpv -- "..header.." "..body
 	print("command:", command)
 	os.execute(command)
 end
