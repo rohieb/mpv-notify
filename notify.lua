@@ -2,20 +2,13 @@
 -- Just put this file into your ~/.mpv/lua folder and mpv will find it.
 -- Author: Roland Hieber <rohieb at rohieb.name>
 
--- string.urlescape()
--- Author: daurnimator
--- License: MIT/X11 
--- From: http://snippets.luacode.org/?p=snippets/stringurlescape_89
-local save__index = function ( func )
-	return function ( t , k  )
-		local v = func ( t , k )
-		rawset ( t , k ,  v )
-		return v
-	end
-end
-local byte_tbl = setmetatable ( { } , { __index = save__index ( function ( t , k ) return ("%%%02x"):format ( c:byte ( ) ) end ) } )
-function string.urlescape ( str )
-	return string.gsub(str, "([^/A-Za-z0-9_])", byte_tbl)
+-- url-escape a string, per RFC 2396, Section 2
+function string.urlescape(str)
+	s, c = string.gsub(str, "([^A-Za-z0-9_.!~*'()/-])",
+		function(c)
+			return ("%%%02x"):format(c:byte())
+		end)
+	return s;
 end
 
 -- escape string for shell inclusion
