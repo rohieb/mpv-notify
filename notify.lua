@@ -119,7 +119,7 @@ function fetch_musicbrainz_cover_art(artist, album, mbid)
 		d, c, h = http.request(url)
 		-- poor man's XML parsing:
 		mbid = string.match(d or "",
-			"<%s*release[^>]+id%s*=%s*['\"]%s*([0-9a-fA-F-]+)%s*['\"]")
+			"<%s*release%s+[^>]*id%s*=%s*['\"]%s*([0-9a-fA-F-]+)%s*['\"]")
 		if not mbid or not valid_mbid(mbid) then
 			print("MusicBrainz returned no match.")
 			print_debug("content: " .. d)
