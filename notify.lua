@@ -12,7 +12,7 @@
 -------------------------------------------------------------------------------
 
 function print_debug(s)
-	print("DEBUG: " .. s) -- comment out for no debug info
+	-- print("DEBUG: " .. s) -- comment out for no debug info
 	return true
 end
 
