@@ -86,6 +86,11 @@ function fetch_musicbrainz_cover_art(artist, album, mbid)
 	print_debug("album: " .. album)
 	print_debug("mbid: " .. mbid)
 
+	if not artist or artist == "" or not album or album == "" then
+		print("not enough metadata, not fetching cover art.")
+		return nil
+	end
+
 	output_filename = string.safe_filename(artist .. "_" .. album)
 	output_filename = (CACHE_DIR .. "/%s.png"):format(output_filename)
 
@@ -179,34 +184,41 @@ function notify_current_track()
 	album_mbid = get_metadata(data, {"MusicBrainz Album Id",
 		"MUSICBRAINZ_ALBUMID"})
 	title = get_metadata(data, {"title", "TITLE"})
-	if title == "" then
-		title = mp.get_property_native("filename")
-	end
 
 	print_debug("notify_current_track: relevant metadata:")
 	print_debug("artist: " .. artist)
 	print_debug("album: " .. album)
 	print_debug("album_mbid: " .. album_mbid)
 
-	header = string.shellescape(string.htmlescape(artist))
-	body = string.shellescape(string.htmlescape(title))
+	summary = ""
+	body = ""
 	params = ""
 
-	image = fetch_musicbrainz_cover_art(artist, album, album_mbid)
-	if image and string.len(image) > 1  then
-		print("found cover art in " .. image)
-		params = " -i "..string.shellescape(image)
+	if (artist ~= "" and album ~= "") or album_mbid ~= "" then
+		image = fetch_musicbrainz_cover_art(artist, album, album_mbid)
+		if image and string.len(image) > 1  then
+			print("found cover art in " .. image)
+			params = " -i "..string.shellescape(image)
+		end
 	end
 
-	if(string.len(header) < 1) then
-		header = "Now playing:"
+	if(artist == "") then
+		summary = string.shellescape("Now playing:")
+	else
+		summary = string.shellescape(string.htmlescape(artist))
 	end
-	if(string.len(album) > 1) then
-		body = string.shellescape(string.htmlescape(title)
-			.."<br/><i>"..string.htmlescape(album).."</i>")
+	if title == "" then
+		body = string.shellescape(mp.get_property_native("filename"))
+	else
+		if album == "" then
+			body = string.shellescape(string.htmlescape(title))
+		else
+			body = string.shellescape(("%s<br/><i>%s</i>"):format(
+				string.htmlescape(title), string.htmlescape(album)))
+		end
 	end
 
-	command = "notify-send -a mpv "..params.." -- "..header.." "..body
+	command = ("notify-send -a mpv %s -- %s %s"):format(params, summary, body)
 	print_debug("command: " .. command)
 	os.execute(command)
 end
