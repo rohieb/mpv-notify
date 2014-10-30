@@ -77,6 +77,42 @@ CACHE_DIR = CACHE_DIR.."/mpv/coverart"
 print_debug("making " .. CACHE_DIR)
 os.execute("mkdir -p -- " .. string.shellescape(CACHE_DIR))
 
+-- look for a list of possible cover art images in the same folder as the file
+-- @param absolute filename name of currently played file, or nil if no match
+function get_folder_cover_art(filename)
+	if not filename or string.len(filename) < 1 then
+		return nil
+	end
+
+	print_debug("get_folder_cover_art: filename is " .. filename)
+
+	cover_extensions = { "png", "jpg", "jpeg", "gif" }
+	cover_names = { "cover", "folder", "front", "back", "insert" }
+
+	path = string.match(filename, "^(.*/)[^/]+$")
+
+	for k,name in pairs(cover_names) do
+		for k,ext in pairs(cover_extensions) do
+			morenames = { name, string.upper(name),
+				string.upper(string.sub(name, 1, 1)) .. string.sub(name, 2, -1) }
+			moreexts = { ext, string.upper(ext) }
+			for k,name in pairs(morenames) do
+				for k,ext in pairs(moreexts) do
+					fn = path .. name .. "." .. ext
+					--print_debug("get_folder_cover_art: trying " .. fn)
+					f = io.open(fn, "r")
+					if f then
+						f:close()
+						print_debug("get_folder_cover_art: match at " .. fn)
+						return fn
+					end
+				end
+			end
+		end
+	end
+	return nil
+end
+
 -- fetch cover art from MusicBrainz/Cover Art Archive
 -- @return file name of downloaded cover art, or nil in case of error
 -- @param mbid optional MusicBrainz release ID
@@ -194,12 +230,15 @@ function notify_current_track()
 	body = ""
 	params = ""
 
-	if (artist ~= "" and album ~= "") or album_mbid ~= "" then
+	abs_filename = os.getenv("PWD") .. "/" .. mp.get_property_native("path")
+	image = get_folder_cover_art(abs_filename)
+	if (not image or image == "")
+	   and ((artist ~= "" and album ~= "") or album_mbid ~= "") then
 		image = fetch_musicbrainz_cover_art(artist, album, album_mbid)
-		if image and string.len(image) > 1  then
-			print("found cover art in " .. image)
-			params = " -i "..string.shellescape(image)
-		end
+	end
+	if image and string.len(image) > 1  then
+		print("found cover art in " .. image)
+		params = " -i " .. string.shellescape(image)
 	end
 
 	if(artist == "") then

@@ -8,7 +8,8 @@ Features
 --------
 
 * shows artist, title and album name (as far as detected by mpv)
-* tries to load cover art from coverartarchive.org and caches it locally
+* tries to find load cover art in the same folder, or loads it from
+	coverartarchive.org and caches it locally.
 
 Requirements
 ------------
