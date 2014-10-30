@@ -77,6 +77,22 @@ CACHE_DIR = CACHE_DIR.."/mpv/coverart"
 print_debug("making " .. CACHE_DIR)
 os.execute("mkdir -p -- " .. string.shellescape(CACHE_DIR))
 
+function tmpname()
+	return "/tmp/mpv-coverart." .. math.random(0,0xffffff)
+end
+
+-- scale an image file
+-- @return boolean of success
+function scale_image(src, dst)
+	convert_cmd = ("convert -scale x64 -- %s %s"):format(
+		string.shellescape(src), string.shellescape(dst))
+	print_debug("executing " .. convert_cmd)
+	if os.execute(convert_cmd) then
+		return true
+	end
+	return false
+end
+
 -- look for a list of possible cover art images in the same folder as the file
 -- @param absolute filename name of currently played file, or nil if no match
 function get_folder_cover_art(filename)
@@ -178,28 +194,21 @@ function fetch_musicbrainz_cover_art(artist, album, mbid)
 		return nil
 	end
 
-	tmp_filename = CACHE_DIR .. "/tmpfile" .. math.random(0,0xffff)
+	tmp_filename = tmpname()
 	f = io.open(tmp_filename, "w+")
 	f:write(d)
 	f:flush()
 	f:close()
 
 	-- make it a nice size
-	convert_cmd = ("convert -scale x64 -- %s %s"):format(
-		string.shellescape(tmp_filename), string.shellescape(output_filename))
-	print_debug("executing " .. convert_cmd)
-	result = os.execute(convert_cmd)
-
-	if not os.remove(tmp_filename) then
-		print("could not remove" .. tmp_filename .. ", please remove it manually")
-	end
-
-	if result then
+	if scale_image(tmp_filename, output_filename) then
+		if not os.remove(tmp_filename) then
+			print("could not remove" .. tmp_filename .. ", please remove it manually")
+		end
 		return output_filename
-	else
-		return nil
 	end
 
+	print(("could not scale %s to %s"):format(tmp_filename, output_filename))
 	return nil
 end
 
@@ -229,16 +238,28 @@ function notify_current_track()
 	summary = ""
 	body = ""
 	params = ""
+	scaled_image = ""
+	delete_scaled_image = false
 
+	-- first try finding local cover art
 	abs_filename = os.getenv("PWD") .. "/" .. mp.get_property_native("path")
-	image = get_folder_cover_art(abs_filename)
-	if (not image or image == "")
-	   and ((artist ~= "" and album ~= "") or album_mbid ~= "") then
-		image = fetch_musicbrainz_cover_art(artist, album, album_mbid)
+	cover_image = get_folder_cover_art(abs_filename)
+	if cover_image and cover_image ~= "" then
+		scaled_image = tmpname()
+		scale_image(cover_image, scaled_image)
+		delete_scaled_image = true
 	end
-	if image and string.len(image) > 1  then
-		print("found cover art in " .. image)
-		params = " -i " .. string.shellescape(image)
+
+	-- then load cover art from the internet
+	if (not scaled_image or scaled_image == "")
+	   and ((artist ~= "" and album ~= "") or album_mbid ~= "") then
+		scaled_image = fetch_musicbrainz_cover_art(artist, album, album_mbid)
+		cover_image = scaled_image
+	end
+
+	if scaled_image and string.len(scaled_image) > 1  then
+		print("found cover art in " .. cover_image)
+		params = " -i " .. string.shellescape(scaled_image)
 	end
 
 	if(artist == "") then
@@ -260,6 +281,10 @@ function notify_current_track()
 	command = ("notify-send -a mpv %s -- %s %s"):format(params, summary, body)
 	print_debug("command: " .. command)
 	os.execute(command)
+
+	if delete_scaled_image and not os.remove(scaled_image) then
+		print("could not remove" .. scaled_image .. ", please remove it manually")
+	end
 end
 
 
