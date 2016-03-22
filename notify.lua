@@ -214,6 +214,9 @@ end
 
 function notify_current_track()
 	data = mp.get_property_native("metadata")
+	if not data then
+		return
+	end
 
 	function get_metadata(data, keys)
 		for k,v in pairs(keys) do
