@@ -228,7 +228,7 @@ function notify_current_track()
 	album = get_metadata(data, {"album", "ALBUM"})
 	album_mbid = get_metadata(data, {"MusicBrainz Album Id",
 		"MUSICBRAINZ_ALBUMID"})
-	title = get_metadata(data, {"title", "TITLE"})
+	title = get_metadata(data, {"title", "TITLE", "icy-title"})
 
 	print_debug("notify_current_track: relevant metadata:")
 	print_debug("artist: " .. artist)
