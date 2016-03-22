@@ -290,7 +290,12 @@ function notify_current_track()
 	end
 end
 
+function notify_metadata_updated(name, data)
+	notify_current_track()
+end
+
 
 -- insert main() here
 
 mp.register_event("file-loaded", notify_current_track)
+mp.observe_property("metadata", nil, notify_metadata_updated)
