@@ -273,7 +273,7 @@ function notify_current_track()
 		if album == "" then
 			body = string.shellescape(string.htmlescape(title))
 		else
-			body = string.shellescape(("%s<br/><i>%s</i>"):format(
+			body = string.shellescape(("%s<br /><i>%s</i>"):format(
 				string.htmlescape(title), string.htmlescape(album)))
 		end
 	end
