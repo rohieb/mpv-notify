@@ -214,6 +214,9 @@ end
 
 function notify_current_track()
 	data = mp.get_property_native("metadata")
+	if not data then
+		return
+	end
 
 	function get_metadata(data, keys)
 		for k,v in pairs(keys) do
@@ -228,7 +231,7 @@ function notify_current_track()
 	album = get_metadata(data, {"album", "ALBUM"})
 	album_mbid = get_metadata(data, {"MusicBrainz Album Id",
 		"MUSICBRAINZ_ALBUMID"})
-	title = get_metadata(data, {"title", "TITLE"})
+	title = get_metadata(data, {"title", "TITLE", "icy-title"})
 
 	print_debug("notify_current_track: relevant metadata:")
 	print_debug("artist: " .. artist)
@@ -287,7 +290,12 @@ function notify_current_track()
 	end
 end
 
+function notify_metadata_updated(name, data)
+	notify_current_track()
+end
+
 
 -- insert main() here
 
 mp.register_event("file-loaded", notify_current_track)
+mp.observe_property("metadata", nil, notify_metadata_updated)
