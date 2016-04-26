@@ -71,6 +71,8 @@ http = require("socket.http")
 http.TIMEOUT = 3
 http.USERAGENT = "mpv-notify/0.1"
 
+posix = require("posix")
+
 local CACHE_DIR = os.getenv("XDG_CACHE_HOME")
 CACHE_DIR = CACHE_DIR or os.getenv("HOME").."/.cache"
 CACHE_DIR = CACHE_DIR.."/mpv/coverart"
@@ -78,7 +80,8 @@ print_debug("making " .. CACHE_DIR)
 os.execute("mkdir -p -- " .. string.shellescape(CACHE_DIR))
 
 function tmpname()
-	return "/tmp/mpv-coverart." .. math.random(0,0xffffff)
+	fd, fname = posix.mkstemp(CACHE_DIR .. "/rescale.XXXXXX")
+	return fname
 end
 
 -- scale an image file
