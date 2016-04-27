@@ -32,7 +32,7 @@ end
 
 -- url-escape a string, per RFC 2396, Section 2
 function string.urlescape(str)
-	s, c = string.gsub(str, "([^A-Za-z0-9_.!~*'()/-])",
+	local s, c = string.gsub(str, "([^A-Za-z0-9_.!~*'()/-])",
 		function(c)
 			return ("%%%02x"):format(c:byte())
 		end)
@@ -41,7 +41,7 @@ end
 
 -- escape string for html
 function string.htmlescape(str)
-	str = string.gsub(str, "<", "&lt;")
+	local str = string.gsub(str, "<", "&lt;")
 	str = string.gsub(str, ">", "&gt;")
 	str = string.gsub(str, "&", "&amp;")
 	str = string.gsub(str, "\"", "&quot;")
@@ -56,7 +56,7 @@ end
 
 -- converts string to a valid filename on most (modern) filesystems
 function string.safe_filename(str)
-	s, c = string.gsub(str, "([^A-Za-z0-9_.-])",
+	local s, _ = string.gsub(str, "([^A-Za-z0-9_.-])",
 		function(c)
 			return ("%02x"):format(c:byte())
 		end)
@@ -67,11 +67,11 @@ end
 -- here we go.
 -------------------------------------------------------------------------------
 
-http = require("socket.http")
+local http = require("socket.http")
 http.TIMEOUT = 3
 http.USERAGENT = "mpv-notify/0.1"
 
-posix = require("posix")
+local posix = require("posix")
 
 local CACHE_DIR = os.getenv("XDG_CACHE_HOME")
 CACHE_DIR = CACHE_DIR or os.getenv("HOME").."/.cache"
@@ -80,14 +80,14 @@ print_debug("making " .. CACHE_DIR)
 os.execute("mkdir -p -- " .. string.shellescape(CACHE_DIR))
 
 function tmpname()
-	fd, fname = posix.mkstemp(CACHE_DIR .. "/rescale.XXXXXX")
+	local _, fname = posix.mkstemp(CACHE_DIR .. "/rescale.XXXXXX")
 	return fname
 end
 
 -- scale an image file
 -- @return boolean of success
 function scale_image(src, dst)
-	convert_cmd = ("convert -scale x64 -- %s %s"):format(
+	local convert_cmd = ("convert -scale x64 -- %s %s"):format(
 		string.shellescape(src), string.shellescape(dst))
 	print_debug("executing " .. convert_cmd)
 	if os.execute(convert_cmd) then
@@ -105,21 +105,21 @@ function get_folder_cover_art(filename)
 
 	print_debug("get_folder_cover_art: filename is " .. filename)
 
-	cover_extensions = { "png", "jpg", "jpeg", "gif" }
-	cover_names = { "cover", "folder", "front", "back", "insert" }
+	local cover_extensions = { "png", "jpg", "jpeg", "gif" }
+	local cover_names = { "cover", "folder", "front", "back", "insert" }
 
-	path = string.match(filename, "^(.*/)[^/]+$")
+	local path = string.match(filename, "^(.*/)[^/]+$")
 
-	for k,name in pairs(cover_names) do
-		for k,ext in pairs(cover_extensions) do
+	for _,name in pairs(cover_names) do
+		for _,ext in pairs(cover_extensions) do
 			morenames = { name, string.upper(name),
 				string.upper(string.sub(name, 1, 1)) .. string.sub(name, 2, -1) }
 			moreexts = { ext, string.upper(ext) }
-			for k,name in pairs(morenames) do
-				for k,ext in pairs(moreexts) do
-					fn = path .. name .. "." .. ext
+			for _,name in pairs(morenames) do
+				for _,ext in pairs(moreexts) do
+					local fn = path .. name .. "." .. ext
 					--print_debug("get_folder_cover_art: trying " .. fn)
-					f = io.open(fn, "r")
+					local f = io.open(fn, "r")
 					if f then
 						f:close()
 						print_debug("get_folder_cover_art: match at " .. fn)
@@ -146,7 +146,7 @@ function fetch_musicbrainz_cover_art(artist, album, mbid)
 		return nil
 	end
 
-	output_filename = string.safe_filename(artist .. "_" .. album)
+	local output_filename = string.safe_filename(artist .. "_" .. album)
 	output_filename = (CACHE_DIR .. "/%s.png"):format(output_filename)
 
 	-- TODO: dirty hack, may only work on Linux.
@@ -160,20 +160,20 @@ function fetch_musicbrainz_cover_art(artist, album, mbid)
 	end
 	print_debug("fetching album art to " .. output_filename)
 
-	valid_mbid = function(s)
+	local valid_mbid = function(s)
 		return s and string.len(s) > 0 and not string.find(s, "[^0-9a-fA-F-]")
 	end
 
 	-- fetch release MBID from MusicBrainz, needed for Cover Art Archive
 	if not valid_mbid(mbid) then
 		string.gsub(artist, '"', "")
-		query = ("%s AND artist:%s"):format(album, artist)
-		url = "http://musicbrainz.org/ws/2/release?limit=1&query="
+		local query = ("%s AND artist:%s"):format(album, artist)
+		local url = "http://musicbrainz.org/ws/2/release?limit=1&query="
 			.. string.urlescape(query)
 		print_debug("fetching " .. url)
-		d, c, h = http.request(url)
+		local d, c, h = http.request(url)
 		-- poor man's XML parsing:
-		mbid = string.match(d or "",
+		local mbid = string.match(d or "",
 			"<%s*release%s+[^>]*id%s*=%s*['\"]%s*([0-9a-fA-F-]+)%s*['\"]")
 		if not mbid or not valid_mbid(mbid) then
 			print("MusicBrainz returned no match.")
@@ -184,9 +184,9 @@ function fetch_musicbrainz_cover_art(artist, album, mbid)
 	print_debug("got MusicBrainz ID " .. mbid)
 
 	-- fetch image from Cover Art Archive
-	url = ("http://coverartarchive.org/release/%s/front-250"):format(mbid)
+	local url = ("http://coverartarchive.org/release/%s/front-250"):format(mbid)
 	print("fetching album cover from " .. url)
-	d, c, h = http.request(url)
+	local d, c, h = http.request(url)
 	if c ~= 200 then
 		print(("Cover Art Archive returned HTTP %s for MBID %s"):format(c, mbid))
 		return nil
@@ -197,8 +197,8 @@ function fetch_musicbrainz_cover_art(artist, album, mbid)
 		return nil
 	end
 
-	tmp_filename = tmpname()
-	f = io.open(tmp_filename, "w+")
+	local tmp_filename = tmpname()
+	local f = io.open(tmp_filename, "w+")
 	f:write(d)
 	f:flush()
 	f:close()
@@ -216,13 +216,13 @@ function fetch_musicbrainz_cover_art(artist, album, mbid)
 end
 
 function notify_current_track()
-	data = mp.get_property_native("metadata")
+	local data = mp.get_property_native("metadata")
 	if not data then
 		return
 	end
 
 	function get_metadata(data, keys)
-		for k,v in pairs(keys) do
+		for _,v in pairs(keys) do
 			if data[v] and string.len(data[v]) > 0 then
 				return data[v]
 			end
@@ -230,26 +230,26 @@ function notify_current_track()
 		return ""
 	end
 	-- srsly MPV, why do we have to do this? :-(
-	artist = get_metadata(data, {"artist", "ARTIST"})
-	album = get_metadata(data, {"album", "ALBUM"})
-	album_mbid = get_metadata(data, {"MusicBrainz Album Id",
+	local artist = get_metadata(data, {"artist", "ARTIST"})
+	local album = get_metadata(data, {"album", "ALBUM"})
+	local album_mbid = get_metadata(data, {"MusicBrainz Album Id",
 		"MUSICBRAINZ_ALBUMID"})
-	title = get_metadata(data, {"title", "TITLE", "icy-title"})
+	local title = get_metadata(data, {"title", "TITLE", "icy-title"})
 
 	print_debug("notify_current_track: relevant metadata:")
 	print_debug("artist: " .. artist)
 	print_debug("album: " .. album)
 	print_debug("album_mbid: " .. album_mbid)
 
-	summary = ""
-	body = ""
-	params = ""
-	scaled_image = ""
-	delete_scaled_image = false
+	local summary = ""
+	local body = ""
+	local params = ""
+	local scaled_image = ""
+	local delete_scaled_image = false
 
 	-- first try finding local cover art
-	abs_filename = os.getenv("PWD") .. "/" .. mp.get_property_native("path")
-	cover_image = get_folder_cover_art(abs_filename)
+	local abs_filename = os.getenv("PWD") .. "/" .. mp.get_property_native("path")
+	local cover_image = get_folder_cover_art(abs_filename)
 	if cover_image and cover_image ~= "" then
 		scaled_image = tmpname()
 		scale_image(cover_image, scaled_image)
@@ -284,7 +284,7 @@ function notify_current_track()
 		end
 	end
 
-	command = ("notify-send -a mpv %s -- %s %s"):format(params, summary, body)
+	local command = ("notify-send -a mpv %s -- %s %s"):format(params, summary, body)
 	print_debug("command: " .. command)
 	os.execute(command)
 
