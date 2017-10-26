@@ -21,11 +21,12 @@ Requirements
 * [mpv](http://mpv.io) (>= 0.3.6)
 * [Lua](http://lua.org) (>= 5.2)
 * [lua-socket](http://w3.impa.br/~diego/software/luasocket/)
+* [lua-posix](https://github.com/luaposix/luaposix)
 * `notify-send` from [libnotify](https://github.com/GNOME/libnotify)
 * `convert` from [ImageMagick](http://www.imagemagick.org)
 
-On recent Debians, do a `sudo apt-get install lua-socket libnotify-bin
-imagemagick`
+On recent Debians, do a `sudo apt-get install lua-socket lua-posix
+libnotify-bin imagemagick`
 
 Installation
 ------------
